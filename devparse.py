@@ -43,7 +43,7 @@ def getEmplList(file, dir):
 def seperateemployees(file, employeelist, dir, reportdate):
     data_frame = pd.read_csv(file, encoding = 'ISO-8859-1')
     
-    employeecount = len(employeelist)
+    #employeecount = len(employeelist)
     for e in employeelist:
         result = data_frame[data_frame['EmployeesInvolved'].str.contains(e,case= False)]
         employeefile = e + ' ' + reportdate + '.csv'
@@ -139,7 +139,6 @@ def main():
     if (ans != 'y') and (ans != 'Y'):
         print('Rename aborted ...')
     else:
-        start_time = time.time()
         print('\nProcessing ...')
         # Copy files to results dir
         for f in files:
