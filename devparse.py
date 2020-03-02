@@ -33,7 +33,8 @@ def getEmplList(file, dir):
     for e in employees:
         empline = e.splitlines()
         for l in empline:
-            employeelist.append(l.upper())
+            if len(l)>0:
+                employeelist.append(l.upper())
     employeelist.sort()
     employeelist = np.array(employeelist)
     employeelist = np.unique(employeelist)
