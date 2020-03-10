@@ -1,13 +1,12 @@
 #!/usr/bin/python3
 #
-# Name: vparse
-# Version 3.0
+# Name: DevParse
+# Version 1.0
 # Created by: Thunder Sargent
-# Desc: Used to parse and analyze Nessus vulnerability scans
-# Updated: 13-Dec-2019
+# Desc: Used to parse deviation reports
+# Updated: 09-Mar-2020
 
 import sys
-from colorama import Style, Fore, Back, init
 import time
 import pandas as pd
 import re
@@ -15,6 +14,8 @@ import os
 import glob
 import numpy as np
 import shutil
+import argparse
+import ntpath
 
 def getcsv():
     extension = 'csv'
@@ -22,11 +23,11 @@ def getcsv():
     return(files)
 
 def getDataFrame(file):
-    data_frame = pd.read_csv(file, sep=',', encoding = 'ISO-8859-1')
+    data_frame = pd.read_csv(file, sep=',')
     return(data_frame)
 
 def getEmplList(file, dir):
-    data_frame = pd.read_csv(file, encoding = 'ISO-8859-1')
+    data_frame = pd.read_csv(file)
     employees = data_frame['EmployeesInvolved'].unique()
     employeelist = []
 
@@ -41,20 +42,21 @@ def getEmplList(file, dir):
     return(employeelist)
 
 def seperateemployees(file, employeelist, dir, reportdate):
-    data_frame = pd.read_csv(file, encoding = 'ISO-8859-1')
-    
-    #employeecount = len(employeelist)
+    data_frame = pd.read_csv(file)
+    employeefile = reportdate + '_Employees.xlsx'
+    writer = pd.ExcelWriter(employeefile, engine='xlsxwriter')
+    dropList = ["Center", "DaysOpen", "Status", "DateClosed", "RootCause", "AssociatedDeviationCAPANumber"]
     for e in employeelist:
         result = data_frame[data_frame['EmployeesInvolved'].str.contains(e,case= False)]
-        employeefile = e + ' ' + reportdate + '.csv'
-        employeefile = os.path.join(dir, employeefile)
-        result.to_csv(employeefile, sep=',', index=False)
-    print(Style.RESET_ALL)
-    print(Fore.GREEN + 'Employees have been seperated into individual files.' + Fore.RESET)
+        result = result.drop(dropList, axis=1)
+        result.to_excel(writer, sheet_name=e, index=False)
+    writer.save()
+    
+    print('Employees have been seperated into individual sheets in file ', employeefile)
 
 def summary(data_frame,summaryfile,employeelist, employeecount):
     EmployeeSummary = []
-    print(Fore.BLUE + '\nCounting deviations per employee ...' + Fore.RESET)
+    print('\nCounting deviations per employee ...')
 
     # Get employee deviation counts
     for h in employeelist:
@@ -62,14 +64,14 @@ def summary(data_frame,summaryfile,employeelist, employeecount):
         dev_count = len(employeeresult)
         EmployeeSummary.append([h, dev_count])
 
-    print(Fore.GREEN + 'Counts complete.' + Fore.RESET)
-    
+    print('Counts complete.')
+    print('Employees = ', len(employeelist))
     # Write summary to file
-    print(Fore.BLUE + '\nWriting summary to file ...' + Fore.RESET)
+    print('\nWriting summary to file ...')
     for h in EmployeeSummary:
         pd.DataFrame(EmployeeSummary).to_csv(summaryfile, sep=',', header=['Employee','Deviations'], index=False)
     EmployeeSummary = getDataFrame(summaryfile)
-    print(Fore.BLUE + '\nSorting by deviation count and rewriting file ... ' + Fore.RESET)
+    print('\nSorting by deviation count and rewriting file ... ')
     EmployeeSummary = EmployeeSummary.sort_values(by=['Deviations'], ascending=False)
 
     employeecount = len(EmployeeSummary)
@@ -80,14 +82,14 @@ def write_to_file(array, outfile):
     try:
         pd.DataFrame(array).to_csv(outfile, index=False, header=None)
     except:
-        print(Fore.RED + 'Could not write to ',outfile, ': Access Denied.' + Style.RESET_ALL)
+        print('Could not write to ',outfile, ': Access Denied.')
         if not input('Try again? (y/n)') == 'y': return
         write_to_file(array, outfile)
 
 def correctDate():
     value= input('Please enter the correct date (ex. 2020-02-28): ')
     while not re.match( r'(19|20)\d\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])', value):
-        print(Fore.RED + 'Incorrect date format or values out of range!' + Style.RESET_ALL)
+        print(F'Incorrect date format or values out of range!')
         value = input('Please enter correct date (ex. 2020-02-28): ')
     return str(value)
 
@@ -95,27 +97,36 @@ def main():
     ################
     ## Initialize ##
     ################
+
+    # Parse passed arguments
+    parser = argparse.ArgumentParser(description='must include a filename to process.')
+    parser.add_argument("-p")
+    args = parser.parse_args()
+    reportFile = args.p
+    reportFile= ntpath.basename(reportFile)
+    cwd = ntpath.dirname(reportFile)
+    print("Reprot to run: ", reportFile)
+
     reportdate = time.strftime('%Y-%m-%d')
     check=""
-    cwd = os.getcwd()
+
     employeelist= []
+    if len(reportFile) < 1:
+        reportFile = input('Please enter a file name with correct path: ')
 
     # Create new folder for output files
-    path = "results"
-    employee_path = 'results/employees'
+    path = str(reportdate) + '_' + re.sub('\.csv', '', reportFile)
 
     if not os.path.exists(path):
         os.mkdir(path)
-        os.mkdir(employee_path)
     else:
         shutil.rmtree(path)
         time.sleep(.300)
         os.mkdir(path)
-        os.mkdir(employee_path)
     
     # Get reportdate 
     while check!="y":
-        check=input('Is this the correct report date: ' + Fore.BLUE + str(reportdate) + Style.RESET_ALL + '? (y/n): ')
+        check=input('Is this the correct report date: ' + str(reportdate) + '? (y/n): ')
         if check!='y':
             reportdate = correctDate()
     summary_file = reportdate + '_Summary.csv'
@@ -123,52 +134,22 @@ def main():
     #################
     # Begin Program #
     #################
-    
-    # List csv in CWD
-    files = getcsv()
-    print(Fore.BLUE + '\nList of csv files in CWD' + Fore.RESET)
-    for f in files:
-        print('\t',f)
 
-    # Show new file names and prepare to rename
-    print(Fore.BLUE + '\nRename these files as:' + Fore.RESET)
-    
-    for f in files:
-        print('\t',reportdate+'_'+f)
-    ans = input('Continue? (y/n): ')
-    if (ans != 'y') and (ans != 'Y'):
-        print('Rename aborted ...')
-    else:
-        print('\nProcessing ...')
-        # Copy files to results dir
-        for f in files:
-            shutil.copy (f, path)
-        # Rename files in results dir
-        os.chdir(path)
-        for f in files:
-            nf = reportdate+'_'+f
-            print('Renaming ' + Fore.BLUE + f + Fore.RESET + ' to '+ Fore.CYAN + nf + Fore.RESET)
-            try:
-                os.rename(f, nf)
-            except:
-                os.remove(nf)
-                os.rename(f, nf)
+    # Copy and rename report file
+    processFile = str(reportdate) +'_' + reportFile
+    print(processFile, reportFile, path)
 
-    print(Fore.BLUE + '\nVerifying rename ...' + Fore.RESET)
+    shutil.copy(reportFile, path)
 
-    files = getcsv()
-    for f in files:
-        #summary_file = 'Summary_'+f
-        summary_df = getDataFrame(f)
-        employeelist = getEmplList(f, 'employees')
-        employeecount = len(employeelist)
-        summary(summary_df, summary_file, employeelist, employeecount)
-        seperateemployees(f, employeelist, 'employees', reportdate)
+    # Begin processing files
+    os.chdir(path)
+    summary_df = getDataFrame(reportFile)
+    employeelist = getEmplList(reportFile, 'employees')
+    employeecount = len(employeelist)
+    summary(summary_df, summary_file, employeelist, employeecount)
+    seperateemployees(reportFile, employeelist, 'employees', reportdate)
    
-    # Return to starting Dir
-    os.chdir(cwd)
-
     # End program
-    print(Fore.GREEN + '\nProcessing complete ...' + Fore.RESET)
+    print('Processing complete ...')
 
 main()
