@@ -2,9 +2,9 @@
 #
 # Name: DevParse
 # Version 1.0
-# Created by: Thunder Sargent
+# Created by: pvtcompyle
 # Desc: Used to parse deviation reports
-# Updated: 09-Mar-2020
+# Updated: 24-Mar-2020
 
 import sys
 import time
