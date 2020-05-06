@@ -99,13 +99,14 @@ def main():
     ################
 
     # Parse passed arguments
+    rootdir = os.getcwd()
     parser = argparse.ArgumentParser(description='must include a filename to process.')
     parser.add_argument("-p")
     args = parser.parse_args()
     reportFile = args.p
     reportFile= ntpath.basename(reportFile)
     cwd = ntpath.dirname(reportFile)
-    print("Reprot to run: ", reportFile)
+    print("Report to run: ", reportFile)
 
     reportdate = time.strftime('%Y-%m-%d')
     check=""
@@ -123,7 +124,7 @@ def main():
         shutil.rmtree(path)
         time.sleep(.300)
         os.mkdir(path)
-    
+
     # Get reportdate 
     while check!="y":
         check=input('Is this the correct report date: ' + str(reportdate) + '? (y/n): ')
@@ -148,8 +149,13 @@ def main():
     employeecount = len(employeelist)
     summary(summary_df, summary_file, employeelist, employeecount)
     seperateemployees(reportFile, employeelist, 'employees', reportdate)
-   
+    
+    zipdir = rootdir + '\\' + path
+    shutil.make_archive(zipdir, 'zip', zipdir)
+
     # End program
     print('Processing complete ...')
+    os.chdir(rootdir)
+    shutil.rmtree(path=zipdir)
 
 main()
