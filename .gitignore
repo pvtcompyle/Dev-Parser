@@ -1,3 +1,5 @@
 
 devparse.bat
 devparse.reg
+*.bat
+*.reg
