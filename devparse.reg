@@ -4,4 +4,4 @@ Windows Registry Editor Version 5.00
 @="Process &Deviations"
 
 [HKEY_CLASSES_ROOT\*\shell\Run script\command]
-@="\"E:\\GitHub\\Dev-Parser\\devparse.bat\" \"%1\""
+@="\"D:\\GitHub\\Dev-Parser\\devparse.bat\" \"%1\""
