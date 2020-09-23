@@ -126,10 +126,10 @@ def main():
         os.mkdir(path)
 
     # Get reportdate 
-    while check!="y":
-        check=input('Is this the correct report date: ' + str(reportdate) + '? (y/n): ')
-        if check!='y':
-            reportdate = correctDate()
+    #while check!="y":
+    #    check=input('Is this the correct report date: ' + str(reportdate) + '? (y/n): ')
+    #    if check!='y':
+    #        reportdate = correctDate()
     summary_file = reportdate + '_Summary.csv'
 
     #################
